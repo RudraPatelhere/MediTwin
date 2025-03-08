@@ -11,7 +11,10 @@ export default function Home() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    localStorage.setItem("userDetails", JSON.stringify(formData));
+    // Generate unique username
+    const username = formData.fullName.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
+    const userDetails = { ...formData, username };
+    localStorage.setItem('userDetails', JSON.stringify(userDetails));
     router.push("/profile");
   };
 

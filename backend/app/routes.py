@@ -15,22 +15,19 @@ def configure_routes(app):
     def save_user_profile():
         try:
             data = request.get_json()
-            required_fields = ["name", "age", "gender", "blood_group", "conditions", "allergies", "medications"]
+            # Username is now pre-generated in frontend
+            username = data.get("username")
+            
+            if not username:
+                return jsonify({"error": "❌ Username is required"}), 400
 
-            for field in required_fields:
-                if field not in data:
-                    return jsonify({"error": f"❌ Missing field: {field}"}), 400
-
-            username = data["name"].strip().lower().replace(" ", "_")  # Normalize username
-            user_profiles[username] = data  # Store user profile in memory
-
+            user_profiles[username] = data
             print(f"✅ User profile saved: {username}")
 
             return jsonify({
                 "message": f"✅ Profile saved successfully for {data['name']}!", 
                 "username": username
             })
-
         except Exception as e:
             print(f"❌ Error saving user profile: {e}")
             return jsonify({"error": str(e)}), 500
