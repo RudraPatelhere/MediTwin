@@ -26,41 +26,48 @@ def fetch_openfda_drug_data(drug_name):
     return None
 
 def analyze_drug_with_gemini(drug_name, full_name, user_profile, drug_info):
-    """Generate personalized drug analysis using Gemini AI"""
-    # Extract user profile details
-    chronic_conditions = user_profile.get("conditions", [])
-    allergies = user_profile.get("allergies", [])
-    medications = user_profile.get("medications", [])
+   """Generate personalized drug analysis using Gemini AI"""
+   # Extract user profile details
+   chronic_conditions = user_profile.get("conditions", [])
+   allergies = user_profile.get("allergies", [])
+   medications = user_profile.get("medications", [])
 
-    # Extract drug information safely
-    warnings = drug_info.get("warnings", ["No warnings available."])
-    side_effects = drug_info.get("side_effects", ["No side effects listed."])
-    usage = drug_info.get("indications_and_usage", ["Usage information not available."])
-    interactions = drug_info.get("ask_doctor_or_pharmacist", ["No interactions found."])
+   # Extract drug information safely
+   warnings = drug_info.get("warnings", ["No warnings available."])
+   side_effects = drug_info.get("adverse_reactions", ["No side effects listed."])
+   usage = drug_info.get("indications_and_usage", ["Usage information not available."])
+   interactions = drug_info.get("drug_interactions", ["No interactions found."])
 
-    # Prepare AI prompt
-    user_prompt = f"""
-    Hi {full_name}! Let's talk about **{drug_name}** and how it might affect you given your health conditions.
+   # Prepare AI prompt with structured format requirement
+   user_prompt = f"""
+   Analyze {drug_name} for {full_name} with these health conditions:
+   - Chronic Conditions: {", ".join(chronic_conditions) if chronic_conditions else "None"}
+   - Allergies: {allergies if allergies else "None"}
+   - Current Medications: {medications if medications else "None"}
+   
+   Based on this drug information:
+   - Warnings: {warnings}
+   - Side Effects: {side_effects}
+   - Usage Instructions: {usage}
+   - Interactions: {interactions}
+   
+   Return your analysis in this exact JSON format:
+   {{
+       "summary": "brief overview of key points",
+       "side_effects": "most relevant side effects for this patient",
+       "interactions": "potential interactions with their medications",
+       "usage": "recommended usage considering their conditions",
+       "precautions": "specific precautions based on their health profile"
+   }}
+   
+   The response must be valid JSON with no additional text, comments, or explanation before or after the JSON.
+   """
 
-    Here's what I found based on your profile:
-    - **Chronic Conditions:** {", ".join(chronic_conditions) if chronic_conditions else "None"}
-    - **Allergies:** {", ".join(allergies) if allergies else "None"}
-    - **Current Medications:** {", ".join(medications) if medications else "None"}
-
-    Here's a personalized breakdown for you:
-    - **Warnings:** {warnings}
-    - **Side Effects:** {side_effects}
-    - **Usage Instructions:** {usage}
-    - **Possible Interactions with Your Medications:** {interactions}
-
-    My goal is to make this simple and clear for you. If you need more details, consult your doctor or pharmacist!
-    """
-
-    # Generate AI summary
-    try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        ai_response = model.generate_content(user_prompt)
-        return ai_response.text if hasattr(ai_response, "text") else "⚠️ Unable to generate summary."
-    except Exception as e:
-        print(f"Error generating AI summary: {e}")
-        return "⚠️ Unable to generate summary."
+   # Generate AI summary
+   try:
+       model = genai.GenerativeModel("gemini-1.5-flash")
+       ai_response = model.generate_content(user_prompt)
+       return ai_response.text if hasattr(ai_response, "text") else "⚠️ Unable to generate summary."
+   except Exception as e:
+       print(f"Error generating AI summary: {e}")
+       return "⚠️ Unable to generate summary."

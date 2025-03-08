@@ -1,6 +1,6 @@
 {
-  "/page": "app/page.js",
   "/profile/page": "app/profile/page.js",
+  "/page": "app/page.js",
   "/medicine-inquiry/page": "app/medicine-inquiry/page.js",
   "/results/page": "app/results/page.js"
 }
