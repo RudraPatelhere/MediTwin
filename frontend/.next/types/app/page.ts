@@ -1,4 +1,4 @@
-// File: C:\Users\Rudra\Downloads\MediTwin\frontend\app\page.js
+// File: E:\Meditwin\MediTwin\frontend\app\page.js
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -1,103 +1,118 @@
 ﻿"use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import StepIndicator from "../../components/StepIndicator.jsx";
 
 export default function Results() {
-    const [medicine, setMedicine] = useState("");
-    const [result, setResult] = useState("");
-    const [username, setUsername] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+  const router = useRouter();
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    useEffect(() => {
-        // ✅ Fetch stored username from localStorage
-        const savedUsername = localStorage.getItem("username");
-
-        if (!savedUsername) {
-            setError("⚠️ No user profile found. Please complete your health profile first.");
+  useEffect(() => {
+    const fetchAnalysisResult = async () => {
+      try {
+        const storedResult = localStorage.getItem('drugAnalysisResult');
+        if (storedResult) {
+          const parsedResult = JSON.parse(storedResult);
+          setAnalysisResult(parsedResult);
         } else {
-            setUsername(savedUsername);
+          throw new Error('No analysis results found');
         }
-    }, []);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!username) {
-            setError("⚠️ No user profile found. Please complete your health profile first.");
-            return;
-        }
-
-        setLoading(true);
-        setError("");
-        setResult("");
-
-        // ✅ Send request to Flask backend
-        const requestData = {
-            username: username,  // Use the stored username
-            drug: medicine,
-        };
-
-        try {
-            const response = await fetch("http://127.0.0.1:5000/drug_analysis", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(requestData),
-            });
-
-            if (!response.ok) {
-                throw new Error("❌ Failed to fetch data. Please check if the backend is running.");
-            }
-
-            const data = await response.json();
-
-            if (data.error) {
-                setError(data.error);
-            } else {
-                setResult(data.summary || "No insights available.");
-            }
-        } catch (error) {
-            setError(error.message || "❌ An unexpected error occurred.");
-        } finally {
-            setLoading(false);
-        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
+    fetchAnalysisResult();
+  }, []);
+
+  const handleDownloadReport = () => {
+    // Future implementation for downloading report
+    alert('Download functionality coming soon');
+  };
+
+  const handleCheckAnother = () => {
+    localStorage.removeItem('drugAnalysisResult');
+    router.push("/medicine-inquiry");
+  };
+
+  if (isLoading) {
     return (
-        <div style={{ maxWidth: "600px", margin: "auto", padding: "2rem" }}>
-            <h1>🔍 Medicine Analysis</h1>
-            <p>Enter a medicine name to see how it affects your body based on your health profile.</p>
-
-            {error && (
-                <div style={{ marginTop: "1rem", padding: "1rem", backgroundColor: "#ffe6e6", borderRadius: "8px", color: "#cc0000" }}>
-                    <h4>⚠️ Error:</h4>
-                    <p>{error}</p>
-                </div>
-            )}
-
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    placeholder="Enter Medicine Name (e.g., Ibuprofen)"
-                    value={medicine}
-                    onChange={(e) => setMedicine(e.target.value)}
-                    required
-                    style={{ width: "100%", padding: "0.8rem", marginBottom: "1rem" }}
-                />
-                <button
-                    type="submit"
-                    style={{ padding: "0.8rem", width: "100%", backgroundColor: "#4A90E2", color: "#fff", fontWeight: "bold" }}
-                    disabled={loading}
-                >
-                    {loading ? "Analyzing..." : "Analyze Medicine"}
-                </button>
-            </form>
-
-            {result && (
-                <div style={{ marginTop: "2rem", padding: "1rem", backgroundColor: "#f1f5f8", borderRadius: "8px" }}>
-                    <h3>Results for {medicine}:</h3>
-                    <p>{result}</p>
-                </div>
-            )}
-        </div>
+      <div className="container">
+        <StepIndicator currentStep={4} />
+        <p>Loading analysis results...</p>
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="container">
+        <StepIndicator currentStep={4} />
+        <div className="error-box">
+          <h2>Error</h2>
+          <p>{error}</p>
+          <button onClick={handleCheckAnother}>Try Again</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container">
+      <StepIndicator currentStep={4} />
+      <h1>Personalized Medicine Analysis</h1>
+      
+      {analysisResult ? (
+        <>
+          <div className="summary-section">
+            <h2>{analysisResult.drug} Analysis</h2>
+            <p><strong>Personalized Summary:</strong></p>
+            <div className="analysis-summary">
+              {analysisResult.summary || "No detailed analysis available."}
+            </div>
+          </div>
+
+          <div className="grid">
+            <div className="box">
+              <h3>Potential Side Effects</h3>
+              <p>{analysisResult.side_effects || "No specific side effects identified."}</p>
+            </div>
+            <div className="box">
+              <h3>Drug Interactions</h3>
+              <p>{analysisResult.interactions || "No known significant interactions found."}</p>
+            </div>
+          </div>
+
+          <div className="box">
+            <h3>Dosage & Usage</h3>
+            <p>{analysisResult.usage || "Standard dosage recommendations not available."}</p>
+          </div>
+
+          <div className="box">
+            <h3>Precautions</h3>
+            <p>{analysisResult.precautions || "General precautions not specified."}</p>
+          </div>
+
+          <div className="action-section">
+            <div className="flex-gap">
+              <button onClick={handleCheckAnother}>Check Another Medicine</button>
+              <button onClick={handleDownloadReport}>Download Report</button>
+              <button onClick={() => router.push('/')}>Go to Home</button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="no-results">
+          <p>No analysis results available. Please run a drug analysis first.</p>
+          <button onClick={() => router.push('/medicine-inquiry')}>
+            Go to Medicine Inquiry
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
