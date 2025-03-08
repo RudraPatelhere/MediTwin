@@ -1,4 +1,5 @@
 from flask import request, jsonify
+import json
 import requests
 from .services import analyze_drug_with_gemini, fetch_openfda_drug_data
 
@@ -63,12 +64,43 @@ def configure_routes(app):
                 user_profile=user_profile, 
                 drug_info=fda_data
             )
-
-            return jsonify({
-                "drug": drug_name,
-                "user_profile": username,
-                "summary": summary
-            })
+            
+            # Try to parse the JSON response from Gemini
+            try:
+                import json
+                import re
+                
+                # Find JSON object in the response (in case there's any text before or after)
+                json_match = re.search(r'({.*})', summary, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(1)
+                    structured_data = json.loads(json_str)
+                    
+                    # Return a response with the structured data fields at the top level
+                    return jsonify({
+                        "drug": drug_name,
+                        "user_profile": username,
+                        "summary": structured_data.get("summary", ""),
+                        "side_effects": structured_data.get("side_effects", ""),
+                        "interactions": structured_data.get("interactions", ""),
+                        "usage": structured_data.get("usage", ""),
+                        "precautions": structured_data.get("precautions", "")
+                    })
+                else:
+                    # If no JSON found, return the summary as is
+                    return jsonify({
+                        "drug": drug_name,
+                        "user_profile": username,
+                        "summary": summary
+                    })
+            except Exception as json_error:
+                print(f"Error parsing JSON from Gemini: {json_error}")
+                # Fallback if JSON parsing fails
+                return jsonify({
+                    "drug": drug_name,
+                    "user_profile": username,
+                    "summary": summary
+                })
 
         except Exception as e:
             print(f"❌ Error analyzing drug: {e}")
