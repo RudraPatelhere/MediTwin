@@ -8,11 +8,11 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend integration
 
 # ✅ Configure Gemini API
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyDDhMEb5ZsGy3-wFnHABtHpFApJK7NhnZA")  # Replace with your key
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyDDhMEb5ZsGy3-wFnHABtHpFApJK7NhnZA")  # Replace with your API key
 genai.configure(api_key=GEMINI_API_KEY)
 
 # ✅ Configure OpenFDA API
-OPENFDA_API_KEY = os.getenv("OPENFDA_API_KEY", "2FhZUVpCAgNJNuYGHKAmYqkGpqM2wpqvotAkfJQe")  # Replace with your key
+OPENFDA_API_KEY = os.getenv("OPENFDA_API_KEY", "2FhZUVpCAgNJNuYGHKAmYqkGpqM2wpqvotAkfJQe")  # Replace with your API key
 
 # ✅ Temporary Storage for User Profiles (for demo purposes)
 user_profiles = {}
@@ -38,7 +38,7 @@ def save_user_profile():
 
         print(f"✅ User profile saved: {username}")
 
-        return jsonify({"message": "✅ Profile saved successfully!", "username": username})
+        return jsonify({"message": f"✅ Profile saved successfully for {data['name']}!", "username": username})
 
     except Exception as e:
         print(f"❌ Error saving user profile: {e}")
@@ -62,6 +62,7 @@ def analyze_drug():
 
         # ✅ Fetch user health data
         user_profile = user_profiles[username]
+        full_name = user_profile.get("name", "User")  # Get user's full name for personalization
         chronic_conditions = user_profile.get("conditions", [])
         allergies = user_profile.get("allergies", [])
         medications = user_profile.get("medications", [])
@@ -85,27 +86,28 @@ def analyze_drug():
 
         drug_info = fda_data["results"][0]
 
-        # ✅ Extract relevant fields
+        # ✅ Extract relevant fields safely
         warnings = drug_info.get("warnings", ["No warnings available."])
         side_effects = drug_info.get("side_effects", ["No side effects listed."])
         usage = drug_info.get("indications_and_usage", ["Usage information not available."])
         interactions = drug_info.get("ask_doctor_or_pharmacist", ["No interactions found."])
 
-        # ✅ AI Summary Prompt
+        # ✅ AI Summary Prompt with Personalization
         user_prompt = f"""
-        A patient is asking for drug safety based on their health profile.
-        Here’s their medical data:
-        - **Chronic Conditions:** {chronic_conditions}
-        - **Allergies:** {allergies}
-        - **Current Medications:** {medications}
+        Hi {full_name}! Let's talk about **{drug_name}** and how it might affect you given your health conditions.
 
-        Provide a **personalized** explanation for the drug **{drug_name}**, including:
-        - **Warnings**: {warnings}
-        - **Side Effects**: {side_effects}
-        - **Usage**: {usage}
-        - **Drug Interactions**: {interactions}
+        Here’s what I found based on your profile:
+        - **Chronic Conditions:** {", ".join(chronic_conditions) if chronic_conditions else "None"}
+        - **Allergies:** {", ".join(allergies) if allergies else "None"}
+        - **Current Medications:** {", ".join(medications) if medications else "None"}
 
-        Response should be **simple, friendly, and useful for the patient**.
+        Here’s a personalized breakdown for you:
+        - **Warnings:** {warnings}
+        - **Side Effects:** {side_effects}
+        - **Usage Instructions:** {usage}
+        - **Possible Interactions with Your Medications:** {interactions}
+
+        My goal is to make this simple and clear for you. If you need more details, consult your doctor or pharmacist!
         """
 
         # ✅ Generate AI Summary
